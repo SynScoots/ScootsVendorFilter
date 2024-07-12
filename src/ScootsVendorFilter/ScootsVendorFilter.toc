@@ -1,0 +1,10 @@
+## Interface: 30300
+## Title: Scoots Vendor Filter
+## Author: Scoots
+## Notes: Automatically filters vendor choices based on class/professions/attunements
+## SavedVariables: SVF_OPTIONS
+
+## Version: 3.3.5
+
+ScootsVendorFilter.lua
+ScootsVendorFilter.xml
