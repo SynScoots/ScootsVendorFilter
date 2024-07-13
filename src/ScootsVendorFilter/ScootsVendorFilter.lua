@@ -84,6 +84,8 @@ function SVF.setupUi()
 		if(SVF.off == false) then
 			SVF.hideMerchantUi()
 			
+			SVF.setFrameLevels()
+			
 			if(SVF.attemptingBackgroundLoad == true) then
 				SVF.attemptBackgroundItemLoad()
 			end
@@ -438,7 +440,6 @@ end
 function SVF.createItemFrame(frameName, item)
 	local rowFrame = CreateFrame('Frame', frameName, SVF.scrollchild)
 	rowFrame:SetFrameStrata(SVF.frameStrata)
-	rowFrame:SetFrameLevel(SVF.baseFrameLevel + 3)
 	rowFrame:SetSize(SVF.rowWidth, SVF.rowHeight)
 	rowFrame.text = rowFrame:CreateFontString(nil, 'ARTWORK')
 	rowFrame.text:SetFont('Fonts\\FRIZQT__.TTF', SVF.textSize)
@@ -457,7 +458,6 @@ function SVF.createItemFrame(frameName, item)
 	
 		rowFrame.borderTop = CreateFrame('Frame', frameName .. 'BorderTop', rowFrame)
 		rowFrame.borderTop:SetFrameStrata(SVF.frameStrata)
-		rowFrame.borderTop:SetFrameLevel(SVF.baseFrameLevel + 4)
 		rowFrame.borderTop:SetSize(SVF.rowWidth, SVF.borderThickness)
 		rowFrame.borderTop:SetPoint('TOPLEFT', rowFrame, 'TOPLEFT', 0, 0)
 		rowFrame.borderTop.texture = rowFrame.borderTop:CreateTexture()
@@ -465,7 +465,6 @@ function SVF.createItemFrame(frameName, item)
 		
 		rowFrame.borderBottom = CreateFrame('Frame', frameName .. 'BorderBottom', rowFrame)
 		rowFrame.borderBottom:SetFrameStrata(SVF.frameStrata)
-		rowFrame.borderBottom:SetFrameLevel(SVF.baseFrameLevel + 4)
 		rowFrame.borderBottom:SetSize(SVF.rowWidth, SVF.borderThickness)
 		rowFrame.borderBottom:SetPoint('BOTTOMLEFT', rowFrame, 'BOTTOMLEFT', 0, 0)
 		rowFrame.borderBottom.texture = rowFrame.borderBottom:CreateTexture()
@@ -473,7 +472,6 @@ function SVF.createItemFrame(frameName, item)
 		
 		rowFrame.iconFrame = CreateFrame('Frame', frameName .. 'IconFrame', rowFrame)
 		rowFrame.iconFrame:SetFrameStrata(SVF.frameStrata)
-		rowFrame.iconFrame:SetFrameLevel(SVF.baseFrameLevel + 4)
 		rowFrame.iconFrame:SetSize(SVF.rowHeight - (SVF.borderThickness * 8), SVF.rowHeight - (SVF.borderThickness * 8))
 		rowFrame.iconFrame:SetPoint('TOPLEFT', rowFrame, 'TOPLEFT', (SVF.borderThickness * 4), (SVF.borderThickness * 4) * -1)
 		rowFrame.iconFrame.texture = rowFrame.iconFrame:CreateTexture()
@@ -559,7 +557,6 @@ function SVF.getCurrencyFrame(index)
 	
 	SVF.currencyFrames[index] = CreateFrame('Frame', 'SVFCurrencyFrame' .. index)
 	SVF.currencyFrames[index]:SetFrameStrata(SVF.frameStrata)
-	SVF.currencyFrames[index]:SetFrameLevel(SVF.baseFrameLevel + 4)
 	SVF.currencyFrames[index]:EnableMouse(true)
 	
 	SVF.currencyFrames[index].text = SVF.currencyFrames[index]:CreateFontString(nil, 'ARTWORK')
@@ -1201,6 +1198,7 @@ function SVF.buildOptionsPanel()
 	SVF.toggleOffButton:SetPoint('BOTTOMRIGHT', SVF.optionsFrame, 'BOTTOMRIGHT', 0, 0)
 	SVF.toggleOffButton:SetFrameStrata(SVF.frameStrata)
 	
+	
 	SVF.toggleOffButton:SetScript('OnClick', function()
 		if(SVF.off == true) then
 			SVF.off = false
@@ -1221,7 +1219,6 @@ function SVF.createOptionToggleFrame(optionName, label, optionValueTrue, optionV
 
 	local toggleFrame = CreateFrame('Frame', 'OptionsToggleFrame' .. SVF.optionToggleFrameCount, SVF.optionsFrame)
 	toggleFrame:SetFrameStrata(SVF.frameStrata)
-	toggleFrame:SetFrameLevel(SVF.baseFrameLevel + 1)
 	toggleFrame:SetHeight(SVF.optionToggleHeight)
 	toggleFrame.text = toggleFrame:CreateFontString(nil, 'ARTWORK')
 	toggleFrame.text:SetFont('Fonts\\FRIZQT__.TTF', SVF.textSize)
@@ -1234,7 +1231,6 @@ function SVF.createOptionToggleFrame(optionName, label, optionValueTrue, optionV
 	
 	toggleFrame.checkBorder = CreateFrame('Frame', 'OptionsToggleFrame' .. SVF.optionToggleFrameCount .. 'CheckBorder', toggleFrame)
 	toggleFrame.checkBorder:SetFrameStrata(SVF.frameStrata)
-	toggleFrame.checkBorder:SetFrameLevel(SVF.baseFrameLevel + 1)
 	toggleFrame.checkBorder:SetSize(SVF.optionToggleHeight, SVF.optionToggleHeight)
 	toggleFrame.checkBorder:SetPoint('TOPLEFT', toggleFrame, 'TOPLEFT', 0, -1)
 	toggleFrame.checkBorder.texture = toggleFrame.checkBorder:CreateTexture()
@@ -1245,7 +1241,6 @@ function SVF.createOptionToggleFrame(optionName, label, optionValueTrue, optionV
 	
 	toggleFrame.check = CreateFrame('Frame', 'OptionsToggleFrame' .. SVF.optionToggleFrameCount .. 'Check', toggleFrame)
 	toggleFrame.check:SetFrameStrata(SVF.frameStrata)
-	toggleFrame.check:SetFrameLevel(SVF.baseFrameLevel + 2)
 	toggleFrame.check:SetSize(SVF.optionToggleHeight, SVF.optionToggleHeight)
 	toggleFrame.check:SetPoint('TOPLEFT', toggleFrame, 'TOPLEFT', 1, -2)
 	toggleFrame.check.texture = toggleFrame.check:CreateTexture()
@@ -1305,6 +1300,60 @@ function SVF.createOptionToggleFrame(optionName, label, optionValueTrue, optionV
 	
 	table.insert(SVF.optionToggles, toggleFrame)
 	return toggleFrame
+end
+
+function SVF.setFrameLevels()
+	SVF.baseFrameLevel = MerchantFrame:GetFrameLevel()
+
+	if(SVF.frame ~= nil) then
+		SVF.frame:SetFrameLevel(SVF.baseFrameLevel + 1)
+	end
+
+	if(SVF.scrollframe ~= nil) then
+		SVF.scrollframe:SetFrameLevel(SVF.baseFrameLevel + 2)
+	end
+
+	if(SVF.scrollchild ~= nil) then
+		SVF.scrollchild:SetFrameLevel(SVF.baseFrameLevel + 3)
+	end
+
+	if(SVF.optionsButton ~= nil) then
+		SVF.optionsButton:SetFrameLevel(SVF.baseFrameLevel + 4)
+	end
+
+	if(SVF.toggleOffButton ~= nil) then
+		SVF.toggleOffButton:SetFrameLevel(SVF.baseFrameLevel + 4)
+	end
+
+	if(SVF.noResultsFrame ~= nil) then
+		SVF.noResultsFrame:SetFrameLevel(SVF.baseFrameLevel + 4)
+		SVF.noResultsFrame.borderTop:SetFrameLevel(SVF.baseFrameLevel + 5)
+		SVF.noResultsFrame.borderBottom:SetFrameLevel(SVF.baseFrameLevel + 5)
+		SVF.noResultsFrame.iconFrame:SetFrameLevel(SVF.baseFrameLevel + 5)
+	end
+
+	if(SVF.items ~= nil and SVF.itemFrames ~= nil) then
+		for i = 1, table.getn(SVF.items) do
+			SVF.itemFrames[i]:SetFrameLevel(SVF.baseFrameLevel + 4)
+			SVF.itemFrames[i].borderTop:SetFrameLevel(SVF.baseFrameLevel + 5)
+			SVF.itemFrames[i].borderBottom:SetFrameLevel(SVF.baseFrameLevel + 5)
+			SVF.itemFrames[i].iconFrame:SetFrameLevel(SVF.baseFrameLevel + 5)
+		end
+	end
+
+	if(SVF.currencyFrames ~= nil) then
+		for i = 1, table.getn(SVF.currencyFrames) do
+			SVF.currencyFrames[i]:SetFrameLevel(SVF.baseFrameLevel + 5)
+		end
+	end
+
+	if(SVF.optionToggles ~= nil) then
+		for i = 1, table.getn(SVF.optionToggles) do
+			SVF.optionToggles[i]:SetFrameLevel(SVF.baseFrameLevel + 4)
+			SVF.optionToggles[i].checkBorder:SetFrameLevel(SVF.baseFrameLevel + 4)
+			SVF.optionToggles[i].check:SetFrameLevel(SVF.baseFrameLevel + 5)
+		end
+	end
 end
 
 function SVF.onLoad()
