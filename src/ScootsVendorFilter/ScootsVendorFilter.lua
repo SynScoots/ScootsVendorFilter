@@ -700,20 +700,22 @@ end
 
 function SVF.updateItemAvailableDisplay(item)
 	local i = item.frameIndex
-
-	SVF.itemFrames[i]:SetAlpha(1)
-	local _, _, _, _, numAvailable = GetMerchantItemInfo(item.merchantIndex)
-	item.available = numAvailable
 	
-	if(item.available <= 0) then
-		SVF.itemFrames[i].iconFrame.text:Hide()
+	if(SVF.itemFrames[i] ~= nil) then
+		SVF.itemFrames[i]:SetAlpha(1)
+		local _, _, _, _, numAvailable = GetMerchantItemInfo(item.merchantIndex)
+		item.available = numAvailable
 		
-		if(item.available == 0) then
-			SVF.itemFrames[i]:SetAlpha(0.5)
+		if(item.available <= 0) then
+			SVF.itemFrames[i].iconFrame.text:Hide()
+			
+			if(item.available == 0) then
+				SVF.itemFrames[i]:SetAlpha(0.5)
+			end
+		else
+			SVF.itemFrames[i].iconFrame.text:Show()
+			SVF.itemFrames[i].iconFrame.text:SetText('(' .. item.available .. ')')
 		end
-	else
-		SVF.itemFrames[i].iconFrame.text:Show()
-		SVF.itemFrames[i].iconFrame.text:SetText('(' .. item.available .. ')')
 	end
 end
 
@@ -763,6 +765,15 @@ function SVF.weaponFilter(itemArray)
 	end
 
 	if(SVF.options.alwaysShowHeirlooms == true and itemArray.rarity == 7) then
+		return true
+	end
+	
+	local validForAll = {
+		['Miscellaneous'] = true,
+		['Fishing Poles'] = true
+	}
+	
+	if(validForAll[itemArray.subtype] ~= nil) then
 		return true
 	end
 
@@ -869,18 +880,6 @@ function SVF.weaponFilter(itemArray)
 			['MAGE'] = true,
 			['PRIEST'] = true,
 			['WARLOCK'] = true
-		},
-		['Miscellaneous'] = {
-			['DEATHKNIGHT'] = true,
-			['DRUID'] = true,
-			['HUNTER'] = true,
-			['MAGE'] = true,
-			['PALADIN'] = true,
-			['PRIEST'] = true,
-			['ROGUE'] = true,
-			['SHAMAN'] = true,
-			['WARLOCK'] = true,
-			['WARRIOR'] = true
 		}
 	}
 	
@@ -1334,24 +1333,30 @@ function SVF.setFrameLevels()
 
 	if(SVF.items ~= nil and SVF.itemFrames ~= nil) then
 		for i = 1, table.getn(SVF.items) do
-			SVF.itemFrames[i]:SetFrameLevel(SVF.baseFrameLevel + 4)
-			SVF.itemFrames[i].borderTop:SetFrameLevel(SVF.baseFrameLevel + 5)
-			SVF.itemFrames[i].borderBottom:SetFrameLevel(SVF.baseFrameLevel + 5)
-			SVF.itemFrames[i].iconFrame:SetFrameLevel(SVF.baseFrameLevel + 5)
+			if(SVF.itemFrames[i] ~= nil) then
+				SVF.itemFrames[i]:SetFrameLevel(SVF.baseFrameLevel + 4)
+				SVF.itemFrames[i].borderTop:SetFrameLevel(SVF.baseFrameLevel + 5)
+				SVF.itemFrames[i].borderBottom:SetFrameLevel(SVF.baseFrameLevel + 5)
+				SVF.itemFrames[i].iconFrame:SetFrameLevel(SVF.baseFrameLevel + 5)
+			end
 		end
 	end
 
 	if(SVF.currencyFrames ~= nil) then
 		for i = 1, table.getn(SVF.currencyFrames) do
-			SVF.currencyFrames[i]:SetFrameLevel(SVF.baseFrameLevel + 5)
+			if(SVF.currencyFrames[i] ~= nil) then
+				SVF.currencyFrames[i]:SetFrameLevel(SVF.baseFrameLevel + 5)
+			end
 		end
 	end
 
 	if(SVF.optionToggles ~= nil) then
 		for i = 1, table.getn(SVF.optionToggles) do
-			SVF.optionToggles[i]:SetFrameLevel(SVF.baseFrameLevel + 4)
-			SVF.optionToggles[i].checkBorder:SetFrameLevel(SVF.baseFrameLevel + 4)
-			SVF.optionToggles[i].check:SetFrameLevel(SVF.baseFrameLevel + 5)
+			if(SVF.optionToggles[i] ~= nil) then
+				SVF.optionToggles[i]:SetFrameLevel(SVF.baseFrameLevel + 4)
+				SVF.optionToggles[i].checkBorder:SetFrameLevel(SVF.baseFrameLevel + 4)
+				SVF.optionToggles[i].check:SetFrameLevel(SVF.baseFrameLevel + 5)
+			end
 		end
 	end
 end
