@@ -1326,9 +1326,6 @@ function SVF.setFrameLevels()
 
 	if(SVF.noResultsFrame ~= nil) then
 		SVF.noResultsFrame:SetFrameLevel(SVF.baseFrameLevel + 4)
-		SVF.noResultsFrame.borderTop:SetFrameLevel(SVF.baseFrameLevel + 5)
-		SVF.noResultsFrame.borderBottom:SetFrameLevel(SVF.baseFrameLevel + 5)
-		SVF.noResultsFrame.iconFrame:SetFrameLevel(SVF.baseFrameLevel + 5)
 	end
 
 	if(SVF.items ~= nil and SVF.itemFrames ~= nil) then
