@@ -27,6 +27,8 @@ SVF.baseFrameLevel = 500
 SVF.TTH = nil
 SVF.optionsOpen = false
 SVF.off = false
+SVF.allAttuneCurrencies = {}
+SVF.totalAttuneCurrency = {}
 
 function SVF.registerTTH(tooltip)
 	SVF.TTH = tooltip
@@ -320,6 +322,8 @@ function SVF.applyFilter()
 			end
 			
 			SVF.currencyIndex = 0
+			SVF.allAttuneCurrencies = {}
+			SVF.totalAttuneCurrency = {}
 			for i, item in ipairs(SVF.items) do
 				if(SVF.itemFrames[i] == nil) then
 					SVF.itemFrames[i] = SVF.createItemFrame('SVFitemFrame' .. i, item)
@@ -328,6 +332,10 @@ function SVF.applyFilter()
 				item.frameIndex = i
 				
 				SVF.renderItem(item)
+			end
+			
+			if(SVF.options.printAttunementCost == true) then
+				SVF.printTotalAttunementCosts()
 			end
 		end
 	end
@@ -695,6 +703,20 @@ function SVF.renderItem(item)
 		
 		currencyFrame:SetPoint('BOTTOMLEFT', SVF.itemFrames[i], 'BOTTOMLEFT', leftOffset, SVF.borderThickness * 4)
 		leftOffset = leftOffset + currencyFrame:GetWidth() + 10
+		
+		if(CanAttuneItemHelper ~= nil and CanAttuneItemHelper(tonumber(item.id)) == 1) then
+			if(SVF.totalAttuneCurrency[currency.name] == nil) then
+				table.insert(SVF.allAttuneCurrencies, currency.name)
+				
+				SVF.totalAttuneCurrency[currency.name] = {
+					['name'] = currency.name,
+					['icon'] = currency.icon,
+					['total'] = 0
+				}
+			end
+			
+			SVF.totalAttuneCurrency[currency.name].total = SVF.totalAttuneCurrency[currency.name].total + currency.amnt
+		end
 	end
 end
 
@@ -717,6 +739,62 @@ function SVF.updateItemAvailableDisplay(item)
 			SVF.itemFrames[i].iconFrame.text:SetText('(' .. item.available .. ')')
 		end
 	end
+end
+
+function SVF.formatNumber(num)
+	local formatted = num
+	while true do  
+		formatted, k = string.gsub(formatted, "^(-?%d+)(%d%d%d)", '%1,%2')
+		if (k == 0) then
+			break
+		end
+	end
+	return formatted
+end
+
+function SVF.printTotalAttunementCosts()
+	if(table.getn(SVF.allAttuneCurrencies) == 0) then
+		return nil
+	end
+	
+	print('|cff3bd17a+---------------------------------------------------|r')
+	print('|cff3bd17a|||r |cffd98148Cost to attune all visible items:|r')
+	print('|cff3bd17a+---------------------------------------------------|r')
+	
+	local copper = 0
+	
+	table.sort(SVF.allAttuneCurrencies)
+	for i, currency in ipairs(SVF.allAttuneCurrencies) do
+		if(currency == 'Gold') then
+			copper = copper + (SVF.totalAttuneCurrency[currency].total * 10000)
+		elseif(currency == 'Silver') then
+			copper = copper + (SVF.totalAttuneCurrency[currency].total * 100)
+		elseif(currency == 'Copper') then
+			copper = copper + SVF.totalAttuneCurrency[currency].total
+		else
+			print(table.concat({
+				'|cff3bd17a|||r ',
+				'|T' .. SVF.totalAttuneCurrency[currency].icon .. ':0|t',
+				SVF.formatNumber(SVF.totalAttuneCurrency[currency].total),
+			}, ''))
+		end
+	end
+	
+	if(copper > 0) then
+		print(table.concat({
+			'|cff3bd17a|||r ',
+			'|TInterface/MoneyFrame/UI-GoldIcon:0|t',
+			ScootsCurrency_FormatNumber(math.floor(copper / 10000)),
+			' ',
+			'|TInterface/MoneyFrame/UI-SilverIcon:0|t',
+			math.floor(copper / 100) % 100,
+			' ',
+			'|TInterface/MoneyFrame/UI-CopperIcon:0|t',
+			copper % 100
+		}, ''))
+	end
+	
+	print('|cff3bd17a+---------------------------------------------------|r')
 end
 
 function SVF.clear()
@@ -747,7 +825,8 @@ function SVF.filter(itemArray)
 			['Gem'] = true,
 			['Consumable'] = true,
 			['Projectile'] = true,
-			['Reagent'] = true
+			['Reagent'] = true,
+			['Container'] = true
 		}
 	
 		if(knownTypes[itemArray.type] == nil) then
@@ -1162,6 +1241,7 @@ function SVF.buildOptionsPanel()
 	local heirlooms = SVF.createOptionToggleFrame('alwaysShowHeirlooms', 'Always show heirlooms', true, false)
 	local recipes = SVF.createOptionToggleFrame('showLearnedRecipes', 'Show learned recipes', true, false)
 	local weapons = SVF.createOptionToggleFrame('showUnusableWeapons', 'Show unusable weapons', true, false)
+	local attuneCost = SVF.createOptionToggleFrame('printAttunementCost', 'Show total cost to attune visible items in chat', true, false)
 	
 	local equipLevel2 = SVF.createOptionToggleFrame('armourFilterThreshold', 'Show only optimal armour', 2)
 	local equipLevel1 = SVF.createOptionToggleFrame('armourFilterThreshold', 'Show equippable armour', 1)
@@ -1178,25 +1258,25 @@ function SVF.buildOptionsPanel()
 	heirlooms:SetPoint('TOPLEFT', SVF.optionsFrame, 'TOPLEFT', 10, -10)
 	recipes:SetPoint('TOPLEFT', SVF.optionsFrame, 'TOPLEFT', 10, (10 + SVF.optionToggleHeight) * -1)
 	weapons:SetPoint('TOPLEFT', SVF.optionsFrame, 'TOPLEFT', 10, (10 + (SVF.optionToggleHeight * 2)) * -1)
+	attuneCost:SetPoint('TOPLEFT', SVF.optionsFrame, 'TOPLEFT', 10, (10 + (SVF.optionToggleHeight * 3)) * -1)
 	
-	equipLevel2:SetPoint('TOPLEFT', SVF.optionsFrame, 'TOPLEFT', 10, (10 + (SVF.optionToggleHeight * 4)) * -1)
-	equipLevel1:SetPoint('TOPLEFT', SVF.optionsFrame, 'TOPLEFT', 10, (10 + (SVF.optionToggleHeight * 5)) * -1)
-	equipLevel0:SetPoint('TOPLEFT', SVF.optionsFrame, 'TOPLEFT', 10, (10 + (SVF.optionToggleHeight * 6)) * -1)
+	equipLevel2:SetPoint('TOPLEFT', SVF.optionsFrame, 'TOPLEFT', 10, (10 + (SVF.optionToggleHeight * 4) + 10) * -1)
+	equipLevel1:SetPoint('TOPLEFT', SVF.optionsFrame, 'TOPLEFT', 10, (10 + (SVF.optionToggleHeight * 5) + 10) * -1)
+	equipLevel0:SetPoint('TOPLEFT', SVF.optionsFrame, 'TOPLEFT', 10, (10 + (SVF.optionToggleHeight * 6) + 10) * -1)
 	
-	attuneUn:SetPoint('TOPLEFT', SVF.optionsFrame, 'TOPLEFT', 10, (10 + (SVF.optionToggleHeight * 8)) * -1)
-	attuneL0:SetPoint('TOPLEFT', SVF.optionsFrame, 'TOPLEFT', 10, (10 + (SVF.optionToggleHeight * 9)) * -1)
-	attuneL1:SetPoint('TOPLEFT', SVF.optionsFrame, 'TOPLEFT', 10, (10 + (SVF.optionToggleHeight * 10)) * -1)
-	attuneL2:SetPoint('TOPLEFT', SVF.optionsFrame, 'TOPLEFT', 10, (10 + (SVF.optionToggleHeight * 11)) * -1)
-	attuneL3:SetPoint('TOPLEFT', SVF.optionsFrame, 'TOPLEFT', 10, (10 + (SVF.optionToggleHeight * 12)) * -1)
+	attuneUn:SetPoint('TOPLEFT', SVF.optionsFrame, 'TOPLEFT', 10, (10 + (SVF.optionToggleHeight * 7) + 20) * -1)
+	attuneL0:SetPoint('TOPLEFT', SVF.optionsFrame, 'TOPLEFT', 10, (10 + (SVF.optionToggleHeight * 8) + 20) * -1)
+	attuneL1:SetPoint('TOPLEFT', SVF.optionsFrame, 'TOPLEFT', 10, (10 + (SVF.optionToggleHeight * 9) + 20) * -1)
+	attuneL2:SetPoint('TOPLEFT', SVF.optionsFrame, 'TOPLEFT', 10, (10 + (SVF.optionToggleHeight * 10) + 20) * -1)
+	attuneL3:SetPoint('TOPLEFT', SVF.optionsFrame, 'TOPLEFT', 10, (10 + (SVF.optionToggleHeight * 11) + 20) * -1)
 	
-	debugOption:SetPoint('TOPLEFT', SVF.optionsFrame, 'TOPLEFT', 10, (10 + (SVF.optionToggleHeight * 14)) * -1)
+	debugOption:SetPoint('TOPLEFT', SVF.optionsFrame, 'TOPLEFT', 10, (10 + (SVF.optionToggleHeight * 12) + 30) * -1)
 	
 	SVF.toggleOffButton = CreateFrame('Button', 'SVFToggleOffButton', SVF.optionsFrame, 'UIPanelButtonTemplate')
 	SVF.toggleOffButton:SetSize(160, 24)
 	SVF.toggleOffButton:SetText('Use default vendor')
 	SVF.toggleOffButton:SetPoint('BOTTOMRIGHT', SVF.optionsFrame, 'BOTTOMRIGHT', 0, 0)
 	SVF.toggleOffButton:SetFrameStrata(SVF.frameStrata)
-	
 	
 	SVF.toggleOffButton:SetScript('OnClick', function()
 		if(SVF.off == true) then
@@ -1365,6 +1445,7 @@ function SVF.onLoad()
 		['showUnusableWeapons'] = false,
 		['showLearnedRecipes'] = false,
 		['maxAttunementToShow'] = -1,
+		['printAttunementCost'] = true,
 		['debug'] = false
 	}
 	
@@ -1383,6 +1464,9 @@ function SVF.onLoad()
 		end
 		if(_G['SVF_OPTIONS'].maxAttunementToShow ~= nil) then
 			SVF.options.maxAttunementToShow = _G['SVF_OPTIONS'].maxAttunementToShow
+		end
+		if(_G['SVF_OPTIONS'].printAttunementCost ~= nil) then
+			SVF.options.printAttunementCost = _G['SVF_OPTIONS'].printAttunementCost
 		end
 		if(_G['SVF_OPTIONS'].debug ~= nil) then
 			SVF.options.debug = _G['SVF_OPTIONS'].debug
