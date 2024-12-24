@@ -29,6 +29,7 @@ SVF.optionsOpen = false
 SVF.off = false
 SVF.allAttuneCurrencies = {}
 SVF.totalAttuneCurrency = {}
+SVF.bagContents = {}
 
 function SVF.registerTTH(tooltip)
 	SVF.TTH = tooltip
@@ -224,6 +225,20 @@ function SVF.addS(context, count)
 	end
 	
 	return context .. s
+end
+
+function SVF.updateBagContents()
+	SVF.bagContents = {}
+	for bagId = 0, 4, 1 do
+		local containerLength = GetContainerNumSlots(bagId)
+		for slotId = 1, containerLength, 1 do
+			local _, _, _, _, _, _, itemLink = GetContainerItemInfo(bagId, slotId)
+			
+			if(itemLink ~= nil) then
+				SVF.bagContents[itemLink] = true
+			end
+		end
+	end
 end
 
 function SVF.applyFilter()
@@ -758,7 +773,7 @@ function SVF.printTotalAttunementCosts()
 	end
 	
 	print('|cff3bd17a+---------------------------------------------------|r')
-	print('|cff3bd17a|||r |cffd98148Cost to attune all visible items:|r')
+	print('|cff3bd17a|||r |cffd98148Cost to purchase all visible items:|r')
 	print('|cff3bd17a+---------------------------------------------------|r')
 	
 	local copper = 0
@@ -809,11 +824,11 @@ end
 
 function SVF.filter(itemArray)
 	if(itemArray.type == 'Weapon') then
-		return SVF.weaponFilter(itemArray) and SVF.attuneFilter(itemArray)
+		return SVF.weaponFilter(itemArray) and SVF.attuneFilter(itemArray) and SVF.bagFilter(itemArray)
 	elseif(itemArray.type == 'Armor') then
-		return SVF.armourFilter(itemArray) and SVF.attuneFilter(itemArray)
+		return SVF.armourFilter(itemArray) and SVF.attuneFilter(itemArray) and SVF.bagFilter(itemArray)
 	elseif(itemArray.type == 'Recipe') then
-		return SVF.recipeFilter(itemArray)
+		return SVF.recipeFilter(itemArray) and SVF.bagFilter(itemArray)
 	end
 	
 	if(SVF.options.debug) then
@@ -1175,6 +1190,18 @@ function SVF.recipeFilter(itemArray)
 	return true
 end
 
+function SVF.bagFilter(itemArray)
+	if(SVF.options.showItemsInBag == true) then
+		return true
+	end
+	
+	if(SVF.bagContents[itemArray.link] ~= nil and SVF.bagContents[itemArray.link] == true) then
+		return false
+	end
+	
+	return true
+end
+
 function SVF.openOptions()
 	if(SVF.optionsFrame == nil) then
 		SVF.buildOptionsPanel()
@@ -1241,7 +1268,8 @@ function SVF.buildOptionsPanel()
 	local heirlooms = SVF.createOptionToggleFrame('alwaysShowHeirlooms', 'Always show heirlooms', true, false)
 	local recipes = SVF.createOptionToggleFrame('showLearnedRecipes', 'Show learned recipes', true, false)
 	local weapons = SVF.createOptionToggleFrame('showUnusableWeapons', 'Show unusable weapons', true, false)
-	local attuneCost = SVF.createOptionToggleFrame('printAttunementCost', 'Show total cost to attune visible items in chat', true, false)
+	local attuneCost = SVF.createOptionToggleFrame('printAttunementCost', 'Show total cost to purchase visible items in chat', true, false)
+	local inBag = SVF.createOptionToggleFrame('showItemsInBag', 'Show items already in your bag', true, false)
 	
 	local equipLevel2 = SVF.createOptionToggleFrame('armourFilterThreshold', 'Show only optimal armour', 2)
 	local equipLevel1 = SVF.createOptionToggleFrame('armourFilterThreshold', 'Show equippable armour', 1)
@@ -1259,18 +1287,19 @@ function SVF.buildOptionsPanel()
 	recipes:SetPoint('TOPLEFT', SVF.optionsFrame, 'TOPLEFT', 10, (10 + SVF.optionToggleHeight) * -1)
 	weapons:SetPoint('TOPLEFT', SVF.optionsFrame, 'TOPLEFT', 10, (10 + (SVF.optionToggleHeight * 2)) * -1)
 	attuneCost:SetPoint('TOPLEFT', SVF.optionsFrame, 'TOPLEFT', 10, (10 + (SVF.optionToggleHeight * 3)) * -1)
+	inBag:SetPoint('TOPLEFT', SVF.optionsFrame, 'TOPLEFT', 10, (10 + (SVF.optionToggleHeight * 4)) * -1)
 	
-	equipLevel2:SetPoint('TOPLEFT', SVF.optionsFrame, 'TOPLEFT', 10, (10 + (SVF.optionToggleHeight * 4) + 10) * -1)
-	equipLevel1:SetPoint('TOPLEFT', SVF.optionsFrame, 'TOPLEFT', 10, (10 + (SVF.optionToggleHeight * 5) + 10) * -1)
-	equipLevel0:SetPoint('TOPLEFT', SVF.optionsFrame, 'TOPLEFT', 10, (10 + (SVF.optionToggleHeight * 6) + 10) * -1)
+	equipLevel2:SetPoint('TOPLEFT', SVF.optionsFrame, 'TOPLEFT', 10, (10 + (SVF.optionToggleHeight * 5) + 10) * -1)
+	equipLevel1:SetPoint('TOPLEFT', SVF.optionsFrame, 'TOPLEFT', 10, (10 + (SVF.optionToggleHeight * 6) + 10) * -1)
+	equipLevel0:SetPoint('TOPLEFT', SVF.optionsFrame, 'TOPLEFT', 10, (10 + (SVF.optionToggleHeight * 7) + 10) * -1)
 	
-	attuneUn:SetPoint('TOPLEFT', SVF.optionsFrame, 'TOPLEFT', 10, (10 + (SVF.optionToggleHeight * 7) + 20) * -1)
-	attuneL0:SetPoint('TOPLEFT', SVF.optionsFrame, 'TOPLEFT', 10, (10 + (SVF.optionToggleHeight * 8) + 20) * -1)
-	attuneL1:SetPoint('TOPLEFT', SVF.optionsFrame, 'TOPLEFT', 10, (10 + (SVF.optionToggleHeight * 9) + 20) * -1)
-	attuneL2:SetPoint('TOPLEFT', SVF.optionsFrame, 'TOPLEFT', 10, (10 + (SVF.optionToggleHeight * 10) + 20) * -1)
-	attuneL3:SetPoint('TOPLEFT', SVF.optionsFrame, 'TOPLEFT', 10, (10 + (SVF.optionToggleHeight * 11) + 20) * -1)
+	attuneUn:SetPoint('TOPLEFT', SVF.optionsFrame, 'TOPLEFT', 10, (10 + (SVF.optionToggleHeight * 8) + 20) * -1)
+	attuneL0:SetPoint('TOPLEFT', SVF.optionsFrame, 'TOPLEFT', 10, (10 + (SVF.optionToggleHeight * 9) + 20) * -1)
+	attuneL1:SetPoint('TOPLEFT', SVF.optionsFrame, 'TOPLEFT', 10, (10 + (SVF.optionToggleHeight * 10) + 20) * -1)
+	attuneL2:SetPoint('TOPLEFT', SVF.optionsFrame, 'TOPLEFT', 10, (10 + (SVF.optionToggleHeight * 11) + 20) * -1)
+	attuneL3:SetPoint('TOPLEFT', SVF.optionsFrame, 'TOPLEFT', 10, (10 + (SVF.optionToggleHeight * 12) + 20) * -1)
 	
-	debugOption:SetPoint('TOPLEFT', SVF.optionsFrame, 'TOPLEFT', 10, (10 + (SVF.optionToggleHeight * 12) + 30) * -1)
+	debugOption:SetPoint('TOPLEFT', SVF.optionsFrame, 'TOPLEFT', 10, (10 + (SVF.optionToggleHeight * 13) + 30) * -1)
 	
 	SVF.toggleOffButton = CreateFrame('Button', 'SVFToggleOffButton', SVF.optionsFrame, 'UIPanelButtonTemplate')
 	SVF.toggleOffButton:SetSize(160, 24)
@@ -1446,6 +1475,7 @@ function SVF.onLoad()
 		['showLearnedRecipes'] = false,
 		['maxAttunementToShow'] = -1,
 		['printAttunementCost'] = true,
+		['showItemsInBag'] = false,
 		['debug'] = false
 	}
 	
@@ -1468,6 +1498,9 @@ function SVF.onLoad()
 		if(_G['SVF_OPTIONS'].printAttunementCost ~= nil) then
 			SVF.options.printAttunementCost = _G['SVF_OPTIONS'].printAttunementCost
 		end
+		if(_G['SVF_OPTIONS'].showItemsInBag ~= nil) then
+			SVF.options.showItemsInBag = _G['SVF_OPTIONS'].showItemsInBag
+		end
 		if(_G['SVF_OPTIONS'].debug ~= nil) then
 			SVF.options.debug = _G['SVF_OPTIONS'].debug
 		end
@@ -1487,7 +1520,11 @@ function SVF.eventHandler(self, event, arg1)
 		if(SVF.loaded ~= true) then
 			SVF.setupUi()
 		end
+		SVF.updateBagContents()
 		SVF.merchantShow()
+	elseif(event == 'UNIT_INVENTORY_CHANGED' or event == 'BAG_UPDATE') then
+		SVF.updateBagContents()
+		SVF.applyFilter()
 	elseif(event == 'MERCHANT_CLOSED') then
 		SVF.MerchantClose()
 	elseif(event == 'MERCHANT_UPDATE') then
@@ -1502,3 +1539,5 @@ SVF.frame:RegisterEvent('PLAYER_LOGOUT')
 SVF.frame:RegisterEvent('MERCHANT_SHOW')
 SVF.frame:RegisterEvent('MERCHANT_CLOSED')
 SVF.frame:RegisterEvent('MERCHANT_UPDATE')
+SVF.frame:RegisterEvent('UNIT_INVENTORY_CHANGED')
+SVF.frame:RegisterEvent('BAG_UPDATE')
