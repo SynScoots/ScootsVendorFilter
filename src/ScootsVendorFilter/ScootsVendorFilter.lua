@@ -1541,8 +1541,10 @@ function SVF.eventHandler(self, event, arg1)
 		SVF.updateBagContents()
 		SVF.merchantShow()
 	elseif(event == 'UNIT_INVENTORY_CHANGED' or event == 'BAG_UPDATE') then
-		SVF.updateBagContents()
-		SVF.applyFilter()
+		if(SVF.loaded == true) then
+			SVF.updateBagContents()
+			SVF.applyFilter()
+		end
 	elseif(event == 'MERCHANT_CLOSED') then
 		SVF.MerchantClose()
 	elseif(event == 'MERCHANT_UPDATE') then
