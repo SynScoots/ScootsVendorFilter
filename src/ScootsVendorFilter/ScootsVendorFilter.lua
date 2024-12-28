@@ -277,6 +277,15 @@ function SVF.applyFilter()
 				['available'] = numAvailable
 			}
 			
+			if(itemArray.type == 'Weapon' and itemArray.location == 'INVTYPE_WEAPONOFFHAND' and (
+				   SVF.playerClass == 'DRUID'
+				or SVF.playerClass == 'MAGE'
+				or SVF.playerClass == 'PRIEST'
+				or SVF.playerClass == 'WARLOCK'
+			)) then
+				itemArray.usable = false
+			end
+			
 			if(GetItemAttuneForge ~= nil) then
 				itemArray.attune = GetItemAttuneForge(itemID)
 			end
@@ -979,6 +988,15 @@ function SVF.weaponFilter(itemArray)
 	
 	if(map[itemArray.subtype] ~= nil) then
 		if(map[itemArray.subtype][SVF.playerClass] ~= nil) then
+			if(itemArray.location == 'INVTYPE_WEAPONOFFHAND' and (
+				   SVF.playerClass == 'DRUID'
+				or SVF.playerClass == 'MAGE'
+				or SVF.playerClass == 'PRIEST'
+				or SVF.playerClass == 'WARLOCK'
+			)) then
+				return false
+			end
+			
 			return true
 		else
 			SVF.hiddenWeapons = SVF.hiddenWeapons + 1
