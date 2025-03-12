@@ -235,7 +235,8 @@ function SVF.updateBagContents()
 			local _, _, _, _, _, _, itemLink = GetContainerItemInfo(bagId, slotId)
 			
 			if(itemLink ~= nil) then
-				SVF.bagContents[itemLink] = true
+				local itemId = SVF.getItemIdFromLink(itemLink)
+				SVF.bagContents[itemId] = true
 			end
 		end
 	end
@@ -256,7 +257,7 @@ function SVF.applyFilter()
 		if(itemLink ~= nil) then
 			itemsFound = itemsFound + 1
 			
-			local itemID = itemLink:gsub('^|%x+|Hitem:', ''):gsub(':.+$', '')
+			local itemID = SVF.getItemIdFromLink(itemLink)
 			local itemName, _, itemRarity, _, itemMinLevel, itemType, itemSubType, _, itemEquipLoc, itemTexture = GetItemInfo(itemLink)
 			local _, _, price, _, _, isUsable, extendedCost = GetMerchantItemInfo(index)
 			local itemArray = {
@@ -356,6 +357,10 @@ function SVF.applyFilter()
 				item.frameIndex = i
 				
 				SVF.renderItem(item)
+			end
+	
+			for i = table.getn(SVF.items) + 1, table.getn(SVF.itemFrames) do
+				SVF.itemFrames[i]:Hide()
 			end
 			
 			if(SVF.options.printAttunementCost == true) then
@@ -1213,7 +1218,7 @@ function SVF.bagFilter(itemArray)
 		return true
 	end
 	
-	if(SVF.bagContents[itemArray.link] ~= nil and SVF.bagContents[itemArray.link] == true) then
+	if(SVF.bagContents[itemArray.id] ~= nil and SVF.bagContents[itemArray.id] == true) then
 		return false
 	end
 	
@@ -1428,6 +1433,10 @@ function SVF.createOptionToggleFrame(optionName, label, optionValueTrue, optionV
 	return toggleFrame
 end
 
+function SVF.getItemIdFromLink(itemLink)
+	return itemLink:gsub('^|%x+|Hitem:', ''):gsub(':.+$', '')
+end
+
 function SVF.setFrameLevels()
 	SVF.baseFrameLevel = MerchantFrame:GetFrameLevel()
 
@@ -1541,7 +1550,7 @@ function SVF.eventHandler(self, event, arg1)
 		SVF.updateBagContents()
 		SVF.merchantShow()
 	elseif(event == 'UNIT_INVENTORY_CHANGED' or event == 'BAG_UPDATE') then
-		if(SVF.loaded == true) then
+		if(SVF.loaded == true and SVF.open == true) then
 			SVF.updateBagContents()
 			SVF.applyFilter()
 		end
