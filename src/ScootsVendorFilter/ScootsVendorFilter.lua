@@ -30,16 +30,46 @@ SVF.off = false
 SVF.allAttuneCurrencies = {}
 SVF.totalAttuneCurrency = {}
 SVF.bagContents = {}
+SVF.loadedAllClasses = false
 
 function SVF.registerTTH(tooltip)
     SVF.TTH = tooltip
 end
 _G['ScootsVendorFilter_RegisterTTH'] = SVF.registerTTH
 
-function SVF.setupUi()
-    local localizedClass, englishClass = UnitClass('player')
-    SVF.playerClass = strupper(englishClass)
+function SVF.getPlayerClass()
+    local _, className = UnitClass('player')
+    SVF.playerClasses = {}
     
+    if(CustomGetClassMask == nil) then
+        local _, playerClass = UnitClass('player')
+        table.insert(SVF.playerClasses, strupper(playerClass))
+    else
+        local mask = CustomGetClassMask()
+        local classList = {
+            ['DEATHKNIGHT'] = 6,
+            ['DRUID'] = 11,
+            ['HUNTER'] = 3,
+            ['MAGE'] = 8,
+            ['PALADIN'] = 2,
+            ['PRIEST'] = 5,
+            ['ROGUE'] = 4,
+            ['SHAMAN'] = 7,
+            ['WARLOCK'] = 9,
+            ['WARRIOR'] = 1
+        }
+        
+        for className, classId in pairs(classList) do
+            if(bit.band(mask, bit.lshift(1, classId - 1)) > 0) then
+                table.insert(SVF.playerClasses, className)
+            end
+        end
+        
+        SVF.loadedAllClasses = true
+    end
+end
+
+function SVF.setupUi()
     local playerFaction = UnitFactionGroup('player')
     if(playerFaction == 'Alliance') then
         SVF.honorIcon = 'Interface/PVPFrame/PVP-Currency-Alliance'
@@ -278,13 +308,21 @@ function SVF.applyFilter()
                 ['available'] = numAvailable
             }
             
-            if(itemArray.type == 'Weapon' and itemArray.location == 'INVTYPE_WEAPONOFFHAND' and (
-                   SVF.playerClass == 'DRUID'
-                or SVF.playerClass == 'MAGE'
-                or SVF.playerClass == 'PRIEST'
-                or SVF.playerClass == 'WARLOCK'
-            )) then
+            if(itemArray.type == 'Weapon' and itemArray.location == 'INVTYPE_WEAPONOFFHAND') then
                 itemArray.usable = false
+                local badClasses = {
+                    ['DRUID'] = true,
+                    ['MAGE'] = true,
+                    ['PRIEST'] = true,
+                    ['WARLOCK'] = true
+                }
+                
+                for _, className in pairs(SVF.playerClasses) do
+                    if(badClasses[className] == nil) then
+                        itemArray.usable = true
+                        break
+                    end
+                end
             end
             
             if(GetItemAttuneForge ~= nil) then
@@ -341,6 +379,10 @@ function SVF.applyFilter()
             SVF.noResultsFrame.text:SetPoint('LEFT', SVF.rowPad, 0)
             SVF.noResultsFrame.text:SetWidth(SVF.rowWidth - (SVF.rowPad * 2))
             SVF.noResultsFrame.text:SetText('No unfiltered items available for purchase.')
+    
+            for i = table.getn(SVF.items) + 1, table.getn(SVF.itemFrames) do
+                SVF.itemFrames[i]:Hide()
+            end
         else
             if(SVF.noResultsFrame ~= nil) then
                 SVF.noResultsFrame:Hide()
@@ -787,7 +829,7 @@ function SVF.printTotalAttunementCosts()
     end
     
     print('|cff3bd17a+---------------------------------------------------|r')
-    print('|cff3bd17a|||r |cffd98148Cost to purchase all visible items:|r')
+    print('|cff3bd17a|||r |cffd98148Cost to purchase all visible attuneable items:|r')
     print('|cff3bd17a+---------------------------------------------------|r')
     
     local copper = 0
@@ -991,22 +1033,24 @@ function SVF.weaponFilter(itemArray)
         }
     }
     
+    local noOffhandWeapons = {
+        ['DRUID'] = true,
+        ['MAGE'] = true,
+        ['PRIEST'] = true,
+        ['WARLOCK'] = true
+    }
+    
     if(map[itemArray.subtype] ~= nil) then
-        if(map[itemArray.subtype][SVF.playerClass] ~= nil) then
-            if(itemArray.location == 'INVTYPE_WEAPONOFFHAND' and (
-                   SVF.playerClass == 'DRUID'
-                or SVF.playerClass == 'MAGE'
-                or SVF.playerClass == 'PRIEST'
-                or SVF.playerClass == 'WARLOCK'
-            )) then
-                return false
+        for _, playerClass in pairs(SVF.playerClasses) do
+            if(map[itemArray.subtype][playerClass]) then
+                if(itemArray.location ~= 'INVTYPE_WEAPONOFFHAND' or noOffhandWeapons[playerClass] == nil) then
+                    return true
+                end
             end
-            
-            return true
-        else
-            SVF.hiddenWeapons = SVF.hiddenWeapons + 1
-            return false
         end
+        
+        SVF.hiddenWeapons = SVF.hiddenWeapons + 1
+        return false
     elseif(SVF.options.debug) then
         print('ScootsVendorFilter: Unhandled weapon subtype: ' .. itemArray.subtype)
         print(itemArray.link)
@@ -1032,51 +1076,48 @@ function SVF.armourFilter(itemArray)
     end
     
     -- 0: not wearable, 1: wearable, 2: attuneable
-    local map = {}
+    local map = {
+        ['DEATHKNIGHT'] = 0,
+        ['DRUID'] = 0,
+        ['HUNTER'] = 0,
+        ['MAGE'] = 0,
+        ['PALADIN'] = 0,
+        ['PRIEST'] = 0,
+        ['ROGUE'] = 0,
+        ['SHAMAN'] = 0,
+        ['WARLOCK'] = 0,
+        ['WARRIOR'] = 0
+    }
     if(itemArray.subtype == 'Cloth') then
-        map = {
-            ['DEATHKNIGHT'] = 1,
-            ['DRUID'] = 1,
-            ['HUNTER'] = 1,
-            ['MAGE'] = 2,
-            ['PALADIN'] = 1,
-            ['PRIEST'] = 2,
-            ['ROGUE'] = 1,
-            ['SHAMAN'] = 1,
-            ['WARLOCK'] = 2,
-            ['WARRIOR'] = 1
-        }
+        map.DEATHKNIGHT = 1
+        map.DRUID = 1
+        map.HUNTER = 1
+        map.MAGE = 2
+        map.PALADIN = 1
+        map.PRIEST = 2
+        map.ROGUE = 1
+        map.SHAMAN = 1
+        map.WARLOCK = 2
+        map.WARRIOR = 1
     elseif(itemArray.subtype == 'Leather') then
-        map = {
-            ['DEATHKNIGHT'] = 1,
-            ['DRUID'] = 2,
-            ['HUNTER'] = 1,
-            ['MAGE'] = 0,
-            ['PALADIN'] = 1,
-            ['PRIEST'] = 0,
-            ['ROGUE'] = 2,
-            ['SHAMAN'] = 1,
-            ['WARLOCK'] = 0,
-            ['WARRIOR'] = 1
-        }
+        map.DEATHKNIGHT = 1
+        map.DRUID = 2
+        map.HUNTER = 1
+        map.PALADIN = 1
+        map.ROGUE = 2
+        map.SHAMAN = 1
+        map.WARRIOR = 1
         
         if(itemArray.level < 40) then
             map.HUNTER = 2
             map.SHAMAN = 2
         end
     elseif(itemArray.subtype == 'Mail') then
-        map = {
-            ['DEATHKNIGHT'] = 1,
-            ['DRUID'] = 0,
-            ['HUNTER'] = 2,
-            ['MAGE'] = 0,
-            ['PALADIN'] = 1,
-            ['PRIEST'] = 0,
-            ['ROGUE'] = 0,
-            ['SHAMAN'] = 2,
-            ['WARLOCK'] = 0,
-            ['WARRIOR'] = 1
-        }
+        map.DEATHKNIGHT = 1
+        map.HUNTER = 2
+        map.PALADIN = 1
+        map.SHAMAN = 2
+        map.WARRIOR = 1
         
         if(itemArray.level < 40) then
             map.HUNTER = 1
@@ -1086,83 +1127,21 @@ function SVF.armourFilter(itemArray)
             map.WARRIOR = 2
         end
     elseif(itemArray.subtype == 'Plate') then
-        map = {
-            ['DEATHKNIGHT'] = 2,
-            ['DRUID'] = 0,
-            ['HUNTER'] = 0,
-            ['MAGE'] = 0,
-            ['PALADIN'] = 2,
-            ['PRIEST'] = 0,
-            ['ROGUE'] = 0,
-            ['SHAMAN'] = 0,
-            ['WARLOCK'] = 0,
-            ['WARRIOR'] = 2
-        }
+        map.DEATHKNIGHT = 2
+        map.PALADIN = 2
+        map.WARRIOR = 2
     elseif(itemArray.subtype == 'Idols') then
-        map = {
-            ['DEATHKNIGHT'] = 0,
-            ['DRUID'] = 2,
-            ['HUNTER'] = 0,
-            ['MAGE'] = 0,
-            ['PALADIN'] = 0,
-            ['PRIEST'] = 0,
-            ['ROGUE'] = 0,
-            ['SHAMAN'] = 0,
-            ['WARLOCK'] = 0,
-            ['WARRIOR'] = 0
-        }
+        map.DRUID = 2
     elseif(itemArray.subtype == 'Librams') then
-        map = {
-            ['DEATHKNIGHT'] = 0,
-            ['DRUID'] = 0,
-            ['HUNTER'] = 0,
-            ['MAGE'] = 0,
-            ['PALADIN'] = 2,
-            ['PRIEST'] = 0,
-            ['ROGUE'] = 0,
-            ['SHAMAN'] = 0,
-            ['WARLOCK'] = 0,
-            ['WARRIOR'] = 0
-        }
+        map.PALADIN = 2
     elseif(itemArray.subtype == 'Totems') then
-        map = {
-            ['DEATHKNIGHT'] = 0,
-            ['DRUID'] = 0,
-            ['HUNTER'] = 0,
-            ['MAGE'] = 0,
-            ['PALADIN'] = 0,
-            ['PRIEST'] = 0,
-            ['ROGUE'] = 0,
-            ['SHAMAN'] = 2,
-            ['WARLOCK'] = 0,
-            ['WARRIOR'] = 0
-        }
+        map.SHAMAN = 2
     elseif(itemArray.subtype == 'Sigils') then
-        map = {
-            ['DEATHKNIGHT'] = 2,
-            ['DRUID'] = 0,
-            ['HUNTER'] = 0,
-            ['MAGE'] = 0,
-            ['PALADIN'] = 0,
-            ['PRIEST'] = 0,
-            ['ROGUE'] = 0,
-            ['SHAMAN'] = 0,
-            ['WARLOCK'] = 0,
-            ['WARRIOR'] = 0
-        }
+        map.DEATHKNIGHT = 2
     elseif(itemArray.subtype == 'Shields') then
-        map = {
-            ['DEATHKNIGHT'] = 0,
-            ['DRUID'] = 0,
-            ['HUNTER'] = 0,
-            ['MAGE'] = 0,
-            ['PALADIN'] = 2,
-            ['PRIEST'] = 0,
-            ['ROGUE'] = 0,
-            ['SHAMAN'] = 2,
-            ['WARLOCK'] = 0,
-            ['WARRIOR'] = 2
-        }
+        map.PALADIN = 2
+        map.SHAMAN = 2
+        map.WARRIOR = 2
     else
         if(SVF.options.debug) then
             print('ScootsVendorFilter: Unhandled armour subtype: ' .. itemArray.subtype)
@@ -1172,12 +1151,14 @@ function SVF.armourFilter(itemArray)
         return true
     end
     
-    if(map[SVF.playerClass] >= SVF.options.armourFilterThreshold) then
-        return true
-    else
-        SVF.hiddenEquipment = SVF.hiddenEquipment + 1
-        return false
+    for _, playerClass in pairs(SVF.playerClasses) do
+        if(map[playerClass] >= SVF.options.armourFilterThreshold) then
+            return true
+        end
     end
+    
+    SVF.hiddenEquipment = SVF.hiddenEquipment + 1
+    return false
 end
 
 function SVF.attuneFilter(itemArray)
@@ -1545,9 +1526,14 @@ function SVF.eventHandler(self, event, arg1)
     elseif(event == 'PLAYER_LOGOUT') then
         SVF.onLogout()
     elseif(event == 'MERCHANT_SHOW') then
+        if(SVF.loadedAllClasses ~= true) then
+            SVF.getPlayerClass()
+        end
+        
         if(SVF.loaded ~= true) then
             SVF.setupUi()
         end
+        
         SVF.updateBagContents()
         SVF.merchantShow()
     elseif(event == 'UNIT_INVENTORY_CHANGED' or event == 'BAG_UPDATE') then
