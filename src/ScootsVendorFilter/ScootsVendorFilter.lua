@@ -31,6 +31,7 @@ SVF.allAttuneCurrencies = {}
 SVF.totalAttuneCurrency = {}
 SVF.bagContents = {}
 SVF.loadedAllClasses = false
+SVF.previousCostString = ''
 
 function SVF.registerTTH(tooltip)
     SVF.TTH = tooltip
@@ -234,6 +235,7 @@ function SVF.MerchantClose()
     SVF.clear()
     SVF.activeFrame = SVF.frame
     SVF.frame:Show()
+    SVF.previousCostString = ''
     
     if(SVF.optionsOpen) then
         SVF.closeOptions()
@@ -405,9 +407,7 @@ function SVF.applyFilter()
                 SVF.itemFrames[i]:Hide()
             end
             
-            if(SVF.options.printAttunementCost == true) then
-                SVF.printTotalAttunementCosts()
-            end
+            SVF.printTotalAttunementCosts()
         end
     end
 end
@@ -824,17 +824,24 @@ function SVF.formatNumber(num)
 end
 
 function SVF.printTotalAttunementCosts()
+    if(SVF.options.printAttunementCost ~= true) then
+        return nil
+    end
+
     if(table.getn(SVF.allAttuneCurrencies) == 0) then
         return nil
     end
     
-    print('|cff3bd17a+---------------------------------------------------|r')
-    print('|cff3bd17a|||r |cffd98148Cost to purchase all visible attuneable items:|r')
-    print('|cff3bd17a+---------------------------------------------------|r')
+    local output = {
+        '|cff3bd17a+---------------------------------------------------|r',
+        '|cff3bd17a|||r |cffd98148Cost to purchase all visible attuneable items:|r',
+        '|cff3bd17a+---------------------------------------------------|r'
+    }
     
     local copper = 0
     
     table.sort(SVF.allAttuneCurrencies)
+    local costStringArray = {}
     for i, currency in ipairs(SVF.allAttuneCurrencies) do
         if(currency == 'Gold') then
             copper = copper + (SVF.totalAttuneCurrency[currency].total * 10000)
@@ -843,7 +850,8 @@ function SVF.printTotalAttunementCosts()
         elseif(currency == 'Copper') then
             copper = copper + SVF.totalAttuneCurrency[currency].total
         else
-            print(table.concat({
+            table.insert(costStringArray, currency .. '=' .. SVF.totalAttuneCurrency[currency].total)
+            table.insert(output, table.concat({
                 '|cff3bd17a|||r ',
                 '|T' .. SVF.totalAttuneCurrency[currency].icon .. ':0|t',
                 SVF.formatNumber(SVF.totalAttuneCurrency[currency].total),
@@ -852,7 +860,8 @@ function SVF.printTotalAttunementCosts()
     end
     
     if(copper > 0) then
-        print(table.concat({
+        table.insert(costStringArray, 'Copper=' .. copper)
+        table.insert(output, table.concat({
             '|cff3bd17a|||r ',
             '|TInterface/MoneyFrame/UI-GoldIcon:0|t',
             ScootsCurrency_FormatNumber(math.floor(copper / 10000)),
@@ -865,7 +874,18 @@ function SVF.printTotalAttunementCosts()
         }, ''))
     end
     
-    print('|cff3bd17a+---------------------------------------------------|r')
+    local costString = table.concat(costStringArray, '-')
+    if(SVF.previousCostString == costString) then
+        return nil
+    end
+    
+    SVF.previousCostString = costString
+    
+    table.insert(output, '|cff3bd17a+---------------------------------------------------|r')
+    
+    for _, str in ipairs(output) do
+        print(str)
+    end
 end
 
 function SVF.clear()
