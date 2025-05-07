@@ -234,8 +234,11 @@ function SVF.MerchantClose()
     SVF.items = {}
     SVF.clear()
     SVF.activeFrame = SVF.frame
-    SVF.frame:Show()
     SVF.previousCostString = ''
+    
+    if(not SVF.off) then
+        SVF.frame:Show()
+    end
     
     if(SVF.optionsOpen) then
         SVF.closeOptions()
@@ -1336,6 +1339,7 @@ function SVF.buildOptionsPanel()
         if(SVF.off == true) then
             SVF.off = false
             SVF.toggleOffButton:SetText('Use default vendor')
+            SVF.frame:Show()
         else
             SVF.off = true
             SVF.toggleOffButton:SetText('Use ScootsVendorFilter')
