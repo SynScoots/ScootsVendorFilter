@@ -867,7 +867,7 @@ function SVF.printTotalAttunementCosts()
         table.insert(output, table.concat({
             '|cff3bd17a|||r ',
             '|TInterface/MoneyFrame/UI-GoldIcon:0|t',
-            ScootsCurrency_FormatNumber(math.floor(copper / 10000)),
+            SVF.formatNumber(math.floor(copper / 10000)),
             ' ',
             '|TInterface/MoneyFrame/UI-SilverIcon:0|t',
             math.floor(copper / 100) % 100,
